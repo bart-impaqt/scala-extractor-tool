@@ -23,6 +23,10 @@ SCALA_CM_NETWORK_ID=
 # Optional network tuning
 SCALA_CM_REQUEST_TIMEOUT_MS=30000
 SCALA_CM_FORCE_IPV4=false
+
+# TLS options for private/self-signed CA environments
+SCALA_CM_CA_CERT_PEM=
+SCALA_CM_TLS_INSECURE=false
 ```
 
 Use either `SCALA_CM_API_TOKEN` or `SCALA_CM_USERNAME` + `SCALA_CM_PASSWORD`.

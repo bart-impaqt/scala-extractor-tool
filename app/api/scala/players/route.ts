@@ -19,6 +19,8 @@ const SCALA_PASSWORD_ENV = "SCALA_CM_PASSWORD";
 const SCALA_NETWORK_ID_ENV = "SCALA_CM_NETWORK_ID";
 const SCALA_REQUEST_TIMEOUT_MS_ENV = "SCALA_CM_REQUEST_TIMEOUT_MS";
 const SCALA_FORCE_IPV4_ENV = "SCALA_CM_FORCE_IPV4";
+const SCALA_TLS_INSECURE_ENV = "SCALA_CM_TLS_INSECURE";
+const SCALA_CA_CERT_PEM_ENV = "SCALA_CM_CA_CERT_PEM";
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const MIN_REQUEST_TIMEOUT_MS = 1000;
 const MAX_REQUEST_TIMEOUT_MS = 120000;
@@ -82,6 +84,8 @@ type ScalaConnectionConfig = {
   networkId?: number;
   requestTimeoutMs: number;
   forceIpv4: boolean;
+  tlsInsecure: boolean;
+  caCertPem?: string;
 };
 
 type RequestJsonResult<TPayload> = {
@@ -195,6 +199,11 @@ function getScalaConnectionConfig(): ScalaConnectionConfig {
   const forceIpv4 = /^(1|true|yes)$/i.test(
     getOptionalEnvVariable(SCALA_FORCE_IPV4_ENV),
   );
+  const tlsInsecure = /^(1|true|yes)$/i.test(
+    getOptionalEnvVariable(SCALA_TLS_INSECURE_ENV),
+  );
+  const caCertPemValue = getOptionalEnvVariable(SCALA_CA_CERT_PEM_ENV);
+  const caCertPem = caCertPemValue || undefined;
 
   if (!apiToken && (!username || !password)) {
     throw new Error(
@@ -220,6 +229,8 @@ function getScalaConnectionConfig(): ScalaConnectionConfig {
     networkId,
     requestTimeoutMs,
     forceIpv4,
+    tlsInsecure,
+    caCertPem,
   };
 }
 
@@ -330,6 +341,8 @@ async function requestJson<TPayload>(
     body?: string;
     timeoutMs: number;
     forceIpv4: boolean;
+    tlsInsecure: boolean;
+    caCertPem?: string;
   },
 ): Promise<RequestJsonResult<TPayload>> {
   const url = new URL(endpoint);
@@ -356,6 +369,8 @@ async function requestJson<TPayload>(
         method: options.method,
         headers: options.headers,
         family: options.forceIpv4 ? 4 : undefined,
+        rejectUnauthorized: options.tlsInsecure ? false : undefined,
+        ca: options.caCertPem,
       },
       (response) => {
         const chunks: Buffer[] = [];
@@ -400,6 +415,8 @@ async function loginAndGetApiToken(
   password: string,
   requestTimeoutMs: number,
   forceIpv4: boolean,
+  tlsInsecure: boolean,
+  caCertPem: string | undefined,
   networkId?: number,
 ): Promise<string> {
   const endpointCandidates = buildEndpointCandidates(
@@ -424,6 +441,8 @@ async function loginAndGetApiToken(
         body: JSON.stringify(body),
         timeoutMs: requestTimeoutMs,
         forceIpv4,
+        tlsInsecure,
+        caCertPem,
       });
       const rawText = response.rawText;
       const payload = response.payload;
@@ -472,7 +491,7 @@ async function loginAndGetApiToken(
   throw new Error(
     `Could not log in to SCALA Content Manager. Attempts: ${attempts.join(
       " | ",
-    )}. Hint: verify CM host/port reachability from the Next.js server process (VPN/proxy/firewall).`,
+    )}. Hint: verify CM host/port reachability (VPN/proxy/firewall) and TLS trust chain. If your CM uses a private CA, set ${SCALA_CA_CERT_PEM_ENV}; temporary fallback: ${SCALA_TLS_INSECURE_ENV}=true.`,
   );
 }
 
@@ -483,6 +502,8 @@ async function fetchPlayersPage(
   offset: number,
   requestTimeoutMs: number,
   forceIpv4: boolean,
+  tlsInsecure: boolean,
+  caCertPem: string | undefined,
 ): Promise<Required<Pick<PlayersApiResponse, "count" | "list">>> {
   const endpointCandidates = buildEndpointCandidates(baseUrl, "/api/rest/players");
   const attempts: string[] = [];
@@ -511,6 +532,8 @@ async function fetchPlayersPage(
         headers,
         timeoutMs: requestTimeoutMs,
         forceIpv4,
+        tlsInsecure,
+        caCertPem,
       });
 
       const rawText = response.rawText;
@@ -566,6 +589,8 @@ async function fetchAllPlayers(
   pageSize: number,
   requestTimeoutMs: number,
   forceIpv4: boolean,
+  tlsInsecure: boolean,
+  caCertPem: string | undefined,
 ): Promise<{ players: ApiPlayer[]; totalFromApi: number }> {
   const players: ApiPlayer[] = [];
   let totalFromApi = 0;
@@ -579,6 +604,8 @@ async function fetchAllPlayers(
       offset,
       requestTimeoutMs,
       forceIpv4,
+      tlsInsecure,
+      caCertPem,
     );
     const pagePlayers = page.list;
 
@@ -648,6 +675,8 @@ export async function POST(request: NextRequest) {
         scalaConfig.password,
         scalaConfig.requestTimeoutMs,
         scalaConfig.forceIpv4,
+        scalaConfig.tlsInsecure,
+        scalaConfig.caCertPem,
         scalaConfig.networkId,
       ));
 
@@ -657,6 +686,8 @@ export async function POST(request: NextRequest) {
       pageSize,
       scalaConfig.requestTimeoutMs,
       scalaConfig.forceIpv4,
+      scalaConfig.tlsInsecure,
+      scalaConfig.caCertPem,
     );
 
     const extractedPlayers: ExtractedPlayer[] = apiPlayers.map((player) => {
