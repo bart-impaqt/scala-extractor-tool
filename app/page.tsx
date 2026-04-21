@@ -57,7 +57,6 @@ export default function Home() {
   const [filialTypes, setFilialTypes] = useState("EV,AB");
   const [filialCodes, setFilialCodes] = useState("");
   const [nameIncludes, setNameIncludes] = useState("");
-  const [pageSize, setPageSize] = useState("200");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractResponse | null>(null);
@@ -81,7 +80,6 @@ export default function Home() {
           filialTypes,
           filialCodes,
           nameIncludes,
-          pageSize: Number(pageSize),
         }),
       });
 
@@ -163,22 +161,6 @@ export default function Home() {
 
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">
-                  API Page Size (1-500)
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={pageSize}
-                  onChange={(event) => setPageSize(event.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none ring-sky-500 focus:ring-2"
-                />
-              </label>
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">
