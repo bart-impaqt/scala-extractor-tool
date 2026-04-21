@@ -116,12 +116,14 @@ export default function Home() {
     }
 
     const headers = [
-      "key",
-      "countryCode",
-      "filialType",
-      "filialCode",
-      "screenCount",
-      "exampleNames",
+      "Filial Key",
+      "Country Code",
+      "Filial Type",
+      "Filial Code",
+      "Screen Count",
+      "Example Player 1",
+      "Example Player 2",
+      "Example Player 3",
     ];
     const rows = result.filials.map((filial) =>
       [
@@ -130,13 +132,16 @@ export default function Home() {
         filial.filialType,
         filial.filialCode,
         String(filial.screenCount),
-        filial.exampleNames.join(" | "),
+        filial.exampleNames[0] ?? "",
+        filial.exampleNames[1] ?? "",
+        filial.exampleNames[2] ?? "",
       ]
         .map(csvEscape)
         .join(","),
     );
 
-    const csv = [headers.join(","), ...rows].join("\n");
+    // Include UTF-8 BOM so Excel opens labels/special chars correctly.
+    const csv = `\uFEFF${[headers.join(","), ...rows].join("\r\n")}`;
     triggerDownload(csv, "scala-filials.csv", "text/csv;charset=utf-8");
   };
 
