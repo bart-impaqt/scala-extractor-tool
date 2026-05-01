@@ -788,6 +788,7 @@ export async function POST(request: NextRequest) {
         },
       },
       filials,
+      players: extractedPlayers,
     });
   } catch (error) {
     return Response.json(

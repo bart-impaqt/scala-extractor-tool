@@ -11,6 +11,15 @@ type ExtractedFilial = {
   exampleNames: string[];
 };
 
+type ExtractedPlayer = {
+  id: number | string;
+  name: string;
+  countryCode: string | null;
+  filialType: string | null;
+  filialCode: string | null;
+  parsed: boolean;
+};
+
 type ExtractResponse = {
   summary: {
     extractedAt: string;
@@ -31,6 +40,7 @@ type ExtractResponse = {
     };
   };
   filials: ExtractedFilial[];
+  players: ExtractedPlayer[];
   error?: string;
 };
 
@@ -143,6 +153,36 @@ export default function Home() {
     // Include UTF-8 BOM so Excel opens labels/special chars correctly.
     const csv = `\uFEFF${[headers.join(","), ...rows].join("\r\n")}`;
     triggerDownload(csv, "scala-filials.csv", "text/csv;charset=utf-8");
+  };
+
+  const downloadAllPlayersCsv = () => {
+    if (!result) {
+      return;
+    }
+
+    const headers = [
+      "Player ID",
+      "Player Name",
+      "Country Code",
+      "Filial Type",
+      "Filial Code",
+      "Parsed",
+    ];
+    const rows = result.players.map((player) =>
+      [
+        String(player.id),
+        player.name,
+        player.countryCode ?? "",
+        player.filialType ?? "",
+        player.filialCode ?? "",
+        player.parsed ? "true" : "false",
+      ]
+        .map(csvEscape)
+        .join(","),
+    );
+
+    const csv = `\uFEFF${[headers.join(","), ...rows].join("\r\n")}`;
+    triggerDownload(csv, "scala-players.csv", "text/csv;charset=utf-8");
   };
 
   return (
@@ -262,7 +302,14 @@ export default function Home() {
                   onClick={downloadCsv}
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm"
                 >
-                  Download CSV
+                  Download Filials CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={downloadAllPlayersCsv}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                >
+                  Download All Players CSV
                 </button>
               </div>
             </div>
